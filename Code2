@@ -1,0 +1,255 @@
+%Inicialización:
+clc             % Limpia la pantalla de salida
+clf             % Limpia ventana de figura 
+clear           % Inicializa variables
+close           % Cierra cualquier ventana de una ejecución anterior
+
+%Generar un digrafo aleatorio, con un mínimo de 5 nodos y un máximo de 30.
+p = 0.85                       % Probabilidad de elección del enlace
+z = 0.1                        % Valor de una variable para la resolución del sistema de ecuaciones
+w = 5                          % Número de enlaces en cada página del buscador
+n = randi([5 30])              % Número de nodos aleatorio
+A = randi([0 1],n);            % Matriz de adyacencia del digrafo
+
+%Etiquetar con un nombre distinto a cada nodo.
+letras = 'ABCDEFGHIJKLMNOPQRSTUVWYZuvwyz';
+r = randperm(30,n);
+for i=1:n
+    % Etiquetamos cada nodo con su dirección url y número de enlace:
+    x = string({i});
+    y = string(letras(r(i)));
+    sw(i) = strcat('www.x',y,x,'x.com');
+    
+    % Para nombrar en la tabla del apartado i la posición de cada enlace
+    sn(i) = strcat('web', x);
+end
+disp('Las direcciones URL de cada página web son:')
+sw
+
+
+%Matriz de adyacencia del digrafo:
+disp('La matriz de adyacencia es:')
+A
+
+
+%Representación del digrafo creado.
+M = digraph(A,sw);
+plot(M)
+title('Digrafo de páginas web')
+
+
+%Transformación de la matriz de adyacencia (A), en una matriz de transición (B).
+% Suma de los elementos de cada fila 
+unos = ones(n,1);
+disp('La suma de los elementos de cada fila de A es')
+C = A*unos
+
+% Suma de los elementos de cada columna (menciones)
+disp('La suma de los elementos de cada columna de A es')
+D = unos'*A
+
+% Matriz de transición
+disp('Calculamos B, matriz de transición')
+B = zeros(n);
+for i = 1:n
+    for j = 1:n
+        if A(i,j) == 0 
+            if C(i,:) == 0      % Si la fila es toda 0
+                B(i,j) = 1/n;
+            else
+                B(i,j) = (1-p)/n; 
+            end
+        else    
+            B(i,j) = p/C(i,:) + (1-p)/n; 
+        end
+    end
+end
+B
+%Para comprobar que la matriz de transición es correcta, debe de cumplir las siguientes condiciones: 
+%1.El vector v deberá estar formado únicamente por 1.
+condiciones = 0;    % Contador de condiciones
+disp('La suma de las probabilidades de cada fila de la matriz transición es')
+v = B*unos
+%2.La suma de todos los elementos del vector v es igual a n.
+sumav = unos'*v
+if sumav == n
+    disp('La suma de los elementos de v es igual al número de nodos')
+    condiciones = 1;
+else
+    disp('Error')
+end
+%3.La matriz de transición tiene 1 como autovalor principal. 
+e = eig(B);
+e1 = uint8(e);
+l = length(e);
+for i = 1:l  % Compruebo que el autovalor 1 pertenece al espectro de la matriz de transición
+    if e1(i) == 1
+       ap = e1(i);
+    end
+end
+if ap == 1
+    disp('El autovalor principal de la matriz es 1')
+    condiciones = condiciones+1;
+else
+    disp('Error')
+end
+%Si se cumplen los puntos anteriores, entonces la matriz que hemos calculado es correcta.
+if condiciones == 2
+    disp('La matriz de transición es:')
+    B
+else
+    disp('Error. Se ha calculado mal la matriz de transición')
+end
+
+%Planteamiento de la ecuación de relevancia por páginas.
+% Como la matriz B tiene autovalor 1, x*(B - 1*I) = vector cero.
+x = sym('x', [1 n]);
+Y = x*B == x;  % Calculamos x, autovector asociado al autovalor 1  
+
+
+%Resolución de la ecuación.
+assume(x(1) == z);
+sol = solve(Y,x);
+
+
+%Presentación correcta de los resultados de la resolución de la ecuación. 
+s = table2array(struct2table(sol));       % Convertimos la estructura en un array de soluciones
+Comprobamos si hay empate (dos resultados iguales):
+l = length(s);
+for i=1:l-1
+    if length(s) ~= length(unique(s))
+      flag = 1;  
+    end
+end
+
+%Ordenación de los resultados.
+E = s;
+if flag == 1    % En caso de haber empate
+    E = (A+A^2)*unos;
+    [E, index] = sort(E, 'descend');
+else
+    [E, index] = sort(E,'descend');
+end
+sw = sw(index);
+D = D(index);
+%Presentación final mediante una tabla.
+VarTypes = {'string', 'double', 'double', 'double'};
+VarNames = {'Dirección URL', 'Menciones', 'Nº de página', 'Posición'};
+sz = [n 4];
+T1 = table('size',sz,'VariableTypes',VarTypes, 'VariableNames', VarNames, 'RowNames', sn);
+%Rellenamos la tabla con los siguientes datos:
+% En cada página (interfaz) hay k nº de webs
+c= 0;
+a = 1;
+for b=1:n 
+    % Dirección URL (columna1)
+    T1(b,1) = {sw(b)};
+
+    % Menciones (columna 2)
+    T1(b,2) = {D(b)};
+
+    % Nº de página (columna 3)
+    if (mod((b/w),1) == 0)         
+        T1(b,3) = {a};
+        a = a+1;
+    else
+        T1(b,3) = {a};
+        T1(b,4) = {c};   
+    end
+
+    % Posición respecto a la página (columna 4)
+    if (c<w)
+        c = c+1;
+        T1(b,4) ={c};
+    else
+        c = 1;
+        T1(b,4) ={c};
+    end
+end
+T1
+
+%El número de nodos, la presentación del grafo,  la probabilidad de elección del enlace y el valor de una variable para la resolución del  %sistema de ecuaciones, son modificables. Dichos valores figuran al principio del script  presentado.
+
+
+%Algoritmo que determina la proporción con la que se debe pagar en cada caso. Primero calculamos la desviación típica (DT) y con ella, %generamos una campana de Gauss (g) respecto a t.
+syms t
+DT =  std(E);      
+g = gaussmf(t,[DT,E(1)]);            
+fplot(g)
+%El usuario indica su posición actual y la posición a la que desea subir.
+pi = 8       
+pf = 7
+
+% Calculamos el área (integral) de g entre el valor de E en la posición actual y el valor de E en la posición deseada.
+A1 = int(g,E(pi),E(pf));            
+SKI = vpa(A1);
+
+% Valor de la integral entre la última y penúltima posición.
+A2 = int(g,E(n),E(n-1));         
+SKI1 = vpa(A2);
+%Creamos una ecuación, la integral anterior por la variable simbólica t, menos 1 (ya que t=0 equivale a la posición primera); y la %igualamos a cero. Esto nos dará de solución, el punto de corte de g con el eje y. (?)
+gg = SKI1(1)*t-1;
+kAns = vpasolve(gg==0);
+
+%Normalizamos las soluciones, tomamos como 1 lo que cuesta aumentar de la última posición a la penúltima. (Luego la empresa puede %establecer una variable de precio para multiplicarla por el valor).
+kValue = SKI*kAns;                     
+Valor = round(kValue,2)
+%Ahora para añadir la variable del tiempo, usuarios aleatorios pagarán para aumentar su ranking a una posición superior aleatoria, pero %cada mes, si no se vuelve a pagar, la página web volverá a su posición original.
+T = 3
+s = sort(s,'descend');  % Utilizamos el vector de soluciones del sistema del apartado f
+for t=1:T
+    ss = s;
+    p0 = randi([2 n])
+    pf = randi([1 p0])
+    if p0 == pf 
+        % Si la pos final es igual a la inicial, la tabla no cambia. T2 = T1.
+        fprintf('MES %1.0f:',t)
+        fprintf('No se ha realizado ningún pago en el mes %1.0f',t)
+    else
+        fprintf('MES %1.0f:',t)
+        ss(p0) = s(pf) + eps;    % La probabilidad de la web a modificar es igual a la de la web de la posición final más epislon
+        % Y con este nuevo orden, se repite el mismo proceso que para la T1
+        [ss index] = sort(ss,'descend');
+        ssw = sw(index);
+        sD = D(index);
+        T2 = T1;
+        % La posición inicial se muestra en la Tabla 1
+        fprintf('La web %s de posición inicial %1.0f paga para subir a la posición %1.0f', sw(p0),p0, pf)
+        % En cada página (interfaz) hay k nº de webs
+        c= 0;
+        a = 1;
+        for b=1:n 
+            % Dirección URL (columna1)
+            T2(b,1) = {ssw(b)};
+        
+            % Menciones (columna 2)
+            T2(b,2) = {sD(b)};
+        
+            % Nº de página (columna 3)
+            if (mod((b/w),1) == 0)         
+                T2(b,3) = {a};
+                a = a+1;
+            else
+                T2(b,3) = {a};
+                T2(b,4) = {c};   
+            end
+        
+            % Posición respecto a la página (columna 4)
+            if (c<w)
+                c = c+1;
+                T2(b,4) ={c};
+            else
+                c = 1;
+                T2(b,4) ={c};
+            end
+        end
+        T2
+        fprintf('Al acabar el mes, si la web %s no paga de nuevo, volverá a su posición por defecto', sw(p0))
+    end
+end
+    
+
+
+
+
+
