@@ -1,0 +1,286 @@
+clear, clc;
+%Representación de la malla
+%Recta de temperatura 0
+x0=0:1:8;
+y0=-x0+12;
+p1=plot(x0,y0,'LineWidth',1.5,'Color','b');
+hold on
+for a=1:7
+    b=-a+12.5;
+    y=-a+12;
+    text(a,b,'0')
+    plot(a,y,'o', 'color', 'b')
+end
+
+
+axis([-1 13 -1 13])
+title('Figura 1: Placa del enunciado')
+hold on
+grid on
+grid minor
+
+%Recta de temperatura 0
+y1=0:1:4;
+x1=8+0*y1  ; 
+p2=plot(x1,y1,'LineWidth',1.5,'Color','b');
+hold on 
+for b=1:4
+    x=8;
+    a=8.5;
+    text(a,b,'0')
+    plot(x,b,'o', 'color', 'b')
+end
+
+%Recta de temperatura 1
+x3=0:1:8;
+y3=0*x3;
+p3=plot(x3,y3,'LineWidth',1.5,'Color','g');
+hold on
+for a=0:8
+    y=0;
+    b=-0.5;
+    text(a,b,'1')
+    plot(a,y,'o', 'color', 'g')
+end
+
+%Recta de temperatura 2
+y2=0:1:12;
+x2=0*y2;
+p4=plot(x2,y2,'LineWidth',1.5,'Color','r');
+hold on 
+for b=1:12
+    x=0;
+    a=-0.5;
+    text(a,b,'2')
+    plot(x,b,'o', 'color', 'r')
+end
+title(legend,'Rectas')
+
+c=0;
+%Matriz M que contiene los 49 puntos que queremos calcular
+M=[];
+for y=1:10
+    for x=1:7
+        if y<-x+12
+            c=c+1;
+            plot(x,y,'.', 'color', 'k')
+            M(:,c)=[x y];
+        end
+    end
+end
+legend([p1 p2 p3 p4],'y=-x+12','x=8','y=0','x=0','Location','northeast')
+
+%Cálculo de las temperaturas interiores (T)
+M
+p=[];
+a=0;
+b=0;
+T=[];
+%Calculamos la temperatura en cada uno de los 49 puntos
+for x=1:49
+        a=a+1;
+        p=M(:,a);
+        p1=p;
+        n=0;
+        y=1e7;
+        for m=1:y
+            %Hasta que no toque una pared, el punto se moverá en horizontal
+            %y vertical aleatoriamente
+            while p(1)~=0 && p(2)~=0 && p(1)~=8 && p(2)~=-p(1)+12
+                %Un número z aleatorio entre 0 y 1 para cada movimiento
+                z=rand(1);
+                  %Punto se va hacia la derecha
+                  if z<0.25     
+                     p(1)=p(1)+1;
+                  end
+                  %Punto se va hacia la izquierda
+                  if z>=0.25 && z<0.5   
+                    p(1)=p(1)-1;
+                  end 
+                  %Punto se va hacia abajo
+                  if z>=0.5 && z<0.75   
+                    p(2)=p(2)-1;
+                  end
+                  %Punto se va hacia arriba
+                  if z>=0.75           
+                    p(2)=p(2)+1;       
+                  end
+            end
+            %Evaluamos qué pared ha tocado y sumamos la temperatura
+            %correspondiente
+            if p(2)==0
+                n=n+1;
+            end
+            if p(1)==0
+                n=n+2;
+            end
+            p=p1;
+       end
+        temp=n/y;
+        %Creamos una matriz T 1x49 que contenga todas las temperaturas
+        %interiores de izquierda a derecha y de abajo a arriba
+        b=b+1;
+        T(b)=[temp];
+end
+T
+
+Representación de las temperaturas interiores (figura2)
+legend off
+%si quisiesemos redondear el resultado:
+%format shortg 
+%t=round(T,2)
+
+%Representación de la malla 
+%Recta de temperatura 0
+x0=0:1:8;
+y0=-x0+12;
+plot(x0,y0,'LineWidth',1.5,'Color','b');
+hold on
+grid on 
+grid minor
+for a=1:7
+    b=-a+12.5;
+    y=-a+12;
+    text(a,b,'0')
+    plot(a,y,'o', 'color', 'b')
+end
+
+
+axis([-1 13 -1 13])
+title('Figura 2: Temperaturas interiores calculadas')
+hold on
+grid on
+grid minor
+
+%Recta de temperatura 0
+y1=0:1:4;
+x1=8+0*y1  ; 
+plot(x1,y1,'LineWidth',1.5,'Color','b');
+hold on 
+for b=1:4
+    x=8;
+    a=8.5;
+    text(a,b,'0')
+    plot(x,b,'o', 'color', 'b')
+end
+
+%Recta de temperatura 1
+x3=0:1:8;
+y3=0*x3;
+plot(x3,y3,'LineWidth',1.5,'Color','g');
+hold on
+for a=0:8
+    y=0;
+    b=-0.5;
+    text(a,b,'1')
+    plot(a,y,'o', 'color', 'g')
+end
+
+%Recta de temperatura 2
+y2=0:1:12;
+x2=0*y2;
+plot(x2,y2,'LineWidth',1.5,'Color','r');
+hold on 
+for b=1:12
+    x=0;
+    a=-0.5;
+    text(a,b,'2')
+    plot(x,b,'o', 'color', 'r')
+end
+
+%temperaturas solucion en los puntos 
+c=0;
+for y=1:10
+    for x=1:7 
+        if y<-x+12
+            c=c+1;
+            plot(x,y,'.', 'color', 'k')
+            str={T(:,c)};
+            text(x-0.23,y+0.23,str,'FontSize',7)
+        end
+    end
+end
+hold off
+
+Mapa de temperaturas a color:
+legend off
+%si quisiesemos redondear el resultado:
+format shortg 
+t=round(T,1);
+
+%Representación de la malla 
+%Recta de temperatura 0
+x0=0:1:8;
+y0=-x0+12;
+plot(x0,y0,'LineWidth',1.5,'Color','b');
+hold on
+for a=1:7
+    b=-a+12.5;
+    y=-a+12;
+    text(a,b,'0')
+    plot(a,y,'o', 'color', 'b')
+end
+
+axis([-1 13 -1 13])
+title('Figura 3:  Mapa de temperaturas a color')
+hold on
+grid on
+grid minor
+
+%Recta de temperatura 0
+y1=0:1:4;
+x1=8+0*y1  ; 
+plot(x1,y1,'LineWidth',1.5,'Color','b');
+hold on 
+for b=1:4
+    x=8;
+    a=8.5;
+    text(a,b,'0')
+    plot(x,b,'o', 'color', 'b')
+end
+
+%Recta de temperatura 1
+x3=0:1:8;
+y3=0*x3;
+plot(x3,y3,'LineWidth',1.5,'Color','g');
+hold on
+for a=0:8
+    y=0;
+    b=-0.5;
+    text(a,b,'1')
+    plot(a,y,'o', 'color', 'g')
+end
+
+%Recta de temperatura 2
+y2=0:1:12;
+x2=0*y2;
+plot(x2,y2,'LineWidth',1.5,'Color','r');
+hold on 
+for b=1:12
+    x=0;
+    a=-0.5;
+    text(a,b,'2')
+    plot(x,b,'o', 'color', 'r')
+end
+
+%temperaturas solucion en los puntos 
+c=0;
+for y=1:10
+    for x=1:7 
+        if y<-x+12
+            c=c+1;
+            if t(:,c)<1
+                s0=plot(x,y,'*', 'color', 'c');
+            end
+            if t(:,c)==1 
+                s1=plot(x,y,'*', 'color', 'g');
+            end
+            if t(:,c)>1
+                s2=plot(x,y,'*', 'color', 'r');
+            end
+            %str={t(:,c)};
+            %text(x-0.23,y+0.23,str,'FontSize',7)
+        end
+    end
+end
+legend([s0 s1 s2],'<1ºC','1ºC','>1ºC','Location','northeast')
